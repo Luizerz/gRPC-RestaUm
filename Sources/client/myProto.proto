@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.grpc.examples.myProto";
+option java_outer_classname = "myProto";
+option objc_class_prefix = "RTG";
+
+package myProto;
+
+service MessageService {
+    rpc createUser(Empty) returns (StatusHandler);
+    rpc sendMessage(MessageRequest) returns (StatusHandler);
+    rpc messageHandler(Empty) returns (MessageResponse);
+}
+
+message Empty {}
+
+message User {
+    string id = 1;
+}
+
+message StatusHandler {
+    User user = 1;
+    Status Status = 2;
+}
+
+message MessageRequest {
+    string id = 1;
+    string request = 2;
+}
+
+message MessageResponse {
+    repeated Message messages = 1;
+}
+
+message Message {
+    string id = 1;
+    string text = 2;
+}
+
+enum Status {
+    SUCCESS = 0;
+    FAILURE = 1;
+    UNKNOW = 2;
+}
