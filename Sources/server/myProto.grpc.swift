@@ -59,6 +59,12 @@ internal protocol MyProto_MessageServiceClientProtocol: GRPCClient {
     callOptions: CallOptions?,
     handler: @escaping (MyProto_User) -> Void
   ) -> ServerStreamingCall<MyProto_User, MyProto_User>
+
+  func updateGameStatus(
+    _ request: MyProto_User,
+    callOptions: CallOptions?,
+    handler: @escaping (MyProto_GameStatus) -> Void
+  ) -> ServerStreamingCall<MyProto_User, MyProto_GameStatus>
 }
 
 extension MyProto_MessageServiceClientProtocol {
@@ -221,6 +227,27 @@ extension MyProto_MessageServiceClientProtocol {
       handler: handler
     )
   }
+
+  /// Server streaming call to updateGameStatus
+  ///
+  /// - Parameters:
+  ///   - request: Request to send to updateGameStatus.
+  ///   - callOptions: Call options.
+  ///   - handler: A closure called when each response is received from the server.
+  /// - Returns: A `ServerStreamingCall` with futures for the metadata and status.
+  internal func updateGameStatus(
+    _ request: MyProto_User,
+    callOptions: CallOptions? = nil,
+    handler: @escaping (MyProto_GameStatus) -> Void
+  ) -> ServerStreamingCall<MyProto_User, MyProto_GameStatus> {
+    return self.makeServerStreamingCall(
+      path: MyProto_MessageServiceClientMetadata.Methods.updateGameStatus.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeupdateGameStatusInterceptors() ?? [],
+      handler: handler
+    )
+  }
 }
 
 @available(*, deprecated)
@@ -324,6 +351,11 @@ internal protocol MyProto_MessageServiceAsyncClientProtocol: GRPCClient {
     _ request: MyProto_User,
     callOptions: CallOptions?
   ) -> GRPCAsyncServerStreamingCall<MyProto_User, MyProto_User>
+
+  func makeUpdateGameStatusCall(
+    _ request: MyProto_User,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncServerStreamingCall<MyProto_User, MyProto_GameStatus>
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
@@ -431,6 +463,18 @@ extension MyProto_MessageServiceAsyncClientProtocol {
       interceptors: self.interceptors?.makeupdateTurnInterceptors() ?? []
     )
   }
+
+  internal func makeUpdateGameStatusCall(
+    _ request: MyProto_User,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncServerStreamingCall<MyProto_User, MyProto_GameStatus> {
+    return self.makeAsyncServerStreamingCall(
+      path: MyProto_MessageServiceClientMetadata.Methods.updateGameStatus.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeupdateGameStatusInterceptors() ?? []
+    )
+  }
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
@@ -530,6 +574,18 @@ extension MyProto_MessageServiceAsyncClientProtocol {
       interceptors: self.interceptors?.makeupdateTurnInterceptors() ?? []
     )
   }
+
+  internal func updateGameStatus(
+    _ request: MyProto_User,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<MyProto_GameStatus> {
+    return self.performAsyncServerStreamingCall(
+      path: MyProto_MessageServiceClientMetadata.Methods.updateGameStatus.path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeupdateGameStatusInterceptors() ?? []
+    )
+  }
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
@@ -574,6 +630,9 @@ internal protocol MyProto_MessageServiceClientInterceptorFactoryProtocol: Sendab
 
   /// - Returns: Interceptors to use when invoking 'updateTurn'.
   func makeupdateTurnInterceptors() -> [ClientInterceptor<MyProto_User, MyProto_User>]
+
+  /// - Returns: Interceptors to use when invoking 'updateGameStatus'.
+  func makeupdateGameStatusInterceptors() -> [ClientInterceptor<MyProto_User, MyProto_GameStatus>]
 }
 
 internal enum MyProto_MessageServiceClientMetadata {
@@ -589,6 +648,7 @@ internal enum MyProto_MessageServiceClientMetadata {
       MyProto_MessageServiceClientMetadata.Methods.updateMessages,
       MyProto_MessageServiceClientMetadata.Methods.updateBoard,
       MyProto_MessageServiceClientMetadata.Methods.updateTurn,
+      MyProto_MessageServiceClientMetadata.Methods.updateGameStatus,
     ]
   )
 
@@ -640,6 +700,12 @@ internal enum MyProto_MessageServiceClientMetadata {
       path: "/myProto.MessageService/updateTurn",
       type: GRPCCallType.serverStreaming
     )
+
+    internal static let updateGameStatus = GRPCMethodDescriptor(
+      name: "updateGameStatus",
+      path: "/myProto.MessageService/updateGameStatus",
+      type: GRPCCallType.serverStreaming
+    )
   }
 }
 
@@ -662,6 +728,8 @@ internal protocol MyProto_MessageServiceProvider: CallHandlerProvider {
   func updateBoard(request: MyProto_User, context: StreamingResponseCallContext<MyProto_Board>) -> EventLoopFuture<GRPCStatus>
 
   func updateTurn(request: MyProto_User, context: StreamingResponseCallContext<MyProto_User>) -> EventLoopFuture<GRPCStatus>
+
+  func updateGameStatus(request: MyProto_User, context: StreamingResponseCallContext<MyProto_GameStatus>) -> EventLoopFuture<GRPCStatus>
 }
 
 extension MyProto_MessageServiceProvider {
@@ -748,6 +816,15 @@ extension MyProto_MessageServiceProvider {
         userFunction: self.updateTurn(request:context:)
       )
 
+    case "updateGameStatus":
+      return ServerStreamingServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<MyProto_User>(),
+        responseSerializer: ProtobufSerializer<MyProto_GameStatus>(),
+        interceptors: self.interceptors?.makeupdateGameStatusInterceptors() ?? [],
+        userFunction: self.updateGameStatus(request:context:)
+      )
+
     default:
       return nil
     }
@@ -801,6 +878,12 @@ internal protocol MyProto_MessageServiceAsyncProvider: CallHandlerProvider, Send
   func updateTurn(
     request: MyProto_User,
     responseStream: GRPCAsyncResponseStreamWriter<MyProto_User>,
+    context: GRPCAsyncServerCallContext
+  ) async throws
+
+  func updateGameStatus(
+    request: MyProto_User,
+    responseStream: GRPCAsyncResponseStreamWriter<MyProto_GameStatus>,
     context: GRPCAsyncServerCallContext
   ) async throws
 }
@@ -896,6 +979,15 @@ extension MyProto_MessageServiceAsyncProvider {
         wrapping: { try await self.updateTurn(request: $0, responseStream: $1, context: $2) }
       )
 
+    case "updateGameStatus":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<MyProto_User>(),
+        responseSerializer: ProtobufSerializer<MyProto_GameStatus>(),
+        interceptors: self.interceptors?.makeupdateGameStatusInterceptors() ?? [],
+        wrapping: { try await self.updateGameStatus(request: $0, responseStream: $1, context: $2) }
+      )
+
     default:
       return nil
     }
@@ -935,6 +1027,10 @@ internal protocol MyProto_MessageServiceServerInterceptorFactoryProtocol: Sendab
   /// - Returns: Interceptors to use when handling 'updateTurn'.
   ///   Defaults to calling `self.makeInterceptors()`.
   func makeupdateTurnInterceptors() -> [ServerInterceptor<MyProto_User, MyProto_User>]
+
+  /// - Returns: Interceptors to use when handling 'updateGameStatus'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeupdateGameStatusInterceptors() -> [ServerInterceptor<MyProto_User, MyProto_GameStatus>]
 }
 
 internal enum MyProto_MessageServiceServerMetadata {
@@ -950,6 +1046,7 @@ internal enum MyProto_MessageServiceServerMetadata {
       MyProto_MessageServiceServerMetadata.Methods.updateMessages,
       MyProto_MessageServiceServerMetadata.Methods.updateBoard,
       MyProto_MessageServiceServerMetadata.Methods.updateTurn,
+      MyProto_MessageServiceServerMetadata.Methods.updateGameStatus,
     ]
   )
 
@@ -999,6 +1096,12 @@ internal enum MyProto_MessageServiceServerMetadata {
     internal static let updateTurn = GRPCMethodDescriptor(
       name: "updateTurn",
       path: "/myProto.MessageService/updateTurn",
+      type: GRPCCallType.serverStreaming
+    )
+
+    internal static let updateGameStatus = GRPCMethodDescriptor(
+      name: "updateGameStatus",
+      path: "/myProto.MessageService/updateGameStatus",
       type: GRPCCallType.serverStreaming
     )
   }

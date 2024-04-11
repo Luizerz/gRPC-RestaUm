@@ -224,6 +224,20 @@ struct MyProto_BoardColumn {
   init() {}
 }
 
+struct MyProto_GameStatus {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  var gameEnd: Bool = false
+
+  var win: Bool = false
+
+  var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  init() {}
+}
+
 #if swift(>=5.5) && canImport(_Concurrency)
 extension MyProto_PlayDirection: @unchecked Sendable {}
 extension MyProto_BoardValue: @unchecked Sendable {}
@@ -234,6 +248,7 @@ extension MyProto_SessionStatus: @unchecked Sendable {}
 extension MyProto_Play: @unchecked Sendable {}
 extension MyProto_Board: @unchecked Sendable {}
 extension MyProto_BoardColumn: @unchecked Sendable {}
+extension MyProto_GameStatus: @unchecked Sendable {}
 #endif  // swift(>=5.5) && canImport(_Concurrency)
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
@@ -507,6 +522,44 @@ extension MyProto_BoardColumn: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
 
   static func ==(lhs: MyProto_BoardColumn, rhs: MyProto_BoardColumn) -> Bool {
     if lhs.columns != rhs.columns {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension MyProto_GameStatus: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".GameStatus"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .same(proto: "gameEnd"),
+    2: .same(proto: "win"),
+  ]
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBoolField(value: &self.gameEnd) }()
+      case 2: try { try decoder.decodeSingularBoolField(value: &self.win) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.gameEnd != false {
+      try visitor.visitSingularBoolField(value: self.gameEnd, fieldNumber: 1)
+    }
+    if self.win != false {
+      try visitor.visitSingularBoolField(value: self.win, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: MyProto_GameStatus, rhs: MyProto_GameStatus) -> Bool {
+    if lhs.gameEnd != rhs.gameEnd {return false}
+    if lhs.win != rhs.win {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

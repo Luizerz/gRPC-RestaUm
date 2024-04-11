@@ -8,13 +8,15 @@ option objc_class_prefix = "RTG";
 package myProto;
 
 service MessageService {
-    rpc connect(Empty) returns (User);
-    rpc disconnect(User) returns (Empty);
-    rpc sendMessage(Message) returns (Empty);
-    rpc sendPlay(Play) returns (Empty);
-    rpc updateMessages(User) returns (stream Message);
-    rpc updateBoard(User) returns (stream Board);
-    rpc updateTurn(User) returns (stream Turn);
+    rpc connect(Empty) returns (User);//
+    rpc disconnect(User) returns (Empty);//
+    rpc sendMessage(Message) returns (Empty); //
+    rpc sendPlay(Play) returns (Empty);//
+    rpc updateSessionStatus(User) returns (stream SessionStatus); //
+    rpc updateMessages(User) returns (stream Message); //
+    rpc updateBoard(User) returns (stream Board); //
+    rpc updateTurn(User) returns (stream User); //
+    rpc updateGameStatus(User) returns (stream GameStatus);
 }
 
 message Empty {}
@@ -22,6 +24,7 @@ message Empty {}
 message User {
     string id = 1;
     string name = 2;
+    bool isYourTurn = 3;
 }
 
 message Message {
@@ -29,8 +32,8 @@ message Message {
     string text = 2;
 }
 
-message Turn {
-    bool isYourTurn = 1;
+message SessionStatus {
+    bool gameStarted = 1;
 }
 
 message Play {
@@ -48,6 +51,11 @@ message BoardColumn {
     repeated BoardValue columns = 1;
 }
 
+message GameStatus {
+    bool gameEnd = 1;
+    bool win = 2;
+}
+
 
 enum PlayDirection{
     right = 0;
@@ -61,3 +69,5 @@ enum BoardValue {
     off = 1;
     null = 2;
 }
+
+

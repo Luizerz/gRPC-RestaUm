@@ -17,7 +17,7 @@ struct HelloWorld: AsyncParsableCommand {
     var port = 1234
 
     func run() async throws {
-        let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        let group = MultiThreadedEventLoopGroup(numberOfThreads: 2)
         defer {
             try! group.syncShutdownGracefully()
         }
@@ -55,7 +55,6 @@ class GameBoard {
 
     init() {
         setupMatrix()
-        matrix.forEach { print($0)}
     }
 
     private func setupMatrix() {
@@ -162,6 +161,22 @@ extension BoardValue {
         case .UNRECOGNIZED(let int):
             self = .null
         }
+    }
+}
+
+extension Array where Element == BoardValue {
+    func convertToProto() -> [MyProto_BoardValue] {
+        let arr = self.map {
+            switch $0 {
+            case .on:
+                MyProto_BoardValue.on
+            case .off:
+                MyProto_BoardValue.off
+            case .null:
+                MyProto_BoardValue.null
+            }
+        }
+        return arr
     }
 }
 

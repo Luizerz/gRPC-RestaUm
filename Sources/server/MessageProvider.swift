@@ -24,19 +24,32 @@ final class MessageProvider: MyProto_MessageServiceAsyncProvider {
     }
 
     private func playerInSession(_ user: MyProto_User) -> GameSession {
-        return self.sessions.first { $0.users.contains(user) }!
+        return self.sessions.first { $0.users.contains { cUser in
+            cUser.id == user.id
+        } }!
+    }
+
+    private func turnHandler(_ session: GameSession) {
+//        session.users.shuffle()
+
+        session.users[0].isYourTurn.toggle()
     }
 
     func connect(request: MyProto_Empty, context: GRPC.GRPCAsyncServerCallContext) async throws -> MyProto_User {
         let newUser = MyProto_User.with {
             $0.id = UUID().uuidString
             $0.name = (1...200).randomElement()!.description
+            $0.isYourTurn = false
         }
         let index = verifySession()
         let session = self.sessions[index]
         session.users.append(newUser)
-        if session.users.count == 2 { session.isInGame.toggle() }
-        return newUser
+        if session.users.count == 2 {
+            session.isInGame.toggle()
+            self.turnHandler(session)
+        }
+        let user = session.users.first { $0.id == newUser.id }!
+        return user
     }
 
     func disconnect(request: MyProto_User, context: GRPC.GRPCAsyncServerCallContext) async throws -> MyProto_Empty {
@@ -44,6 +57,7 @@ final class MessageProvider: MyProto_MessageServiceAsyncProvider {
         session.users.removeAll { user in
             user.id == request.id
         }
+        if session.isInGame { session.isInGame.toggle() }
         return MyProto_Empty()
     }
 
@@ -53,11 +67,44 @@ final class MessageProvider: MyProto_MessageServiceAsyncProvider {
         return MyProto_Empty()
     }
 
+
+    func sendPlay(request: MyProto_Play, context: GRPC.GRPCAsyncServerCallContext) async throws -> MyProto_Empty {
+
+        let session = playerInSession(request.user)
+        switch request.direction {
+        case .right:
+            session.gameBoard.moveRight(itemRow: Int(request.row), itemColumn: Int(request.column))
+        case .left:
+            session.gameBoard.moveLeft(itemRow: Int(request.row), itemColumn: Int(request.column))
+        case .top:
+            session.gameBoard.moveUp(itemRow: Int(request.row), itemColumn: Int(request.column))
+        case .bottom:
+            session.gameBoard.moveDown(itemRow: Int(request.row), itemColumn: Int(request.column))
+        default:
+            print()
+        }
+        let userIndex = session.users.firstIndex { $0.id == request.user.id }!
+        let nextUserIndex = session.users.firstIndex { $0.id != request.user.id }!
+        session.users[userIndex].isYourTurn.toggle()
+        session.users[nextUserIndex].isYourTurn.toggle()
+        return MyProto_Empty()
+    }
+
+    func updateSessionStatus(request: MyProto_User, responseStream: GRPC.GRPCAsyncResponseStreamWriter<MyProto_SessionStatus>, context: GRPC.GRPCAsyncServerCallContext) async throws {
+        let session = playerInSession(request)
+        while !session.isInGame {
+            usleep(1000)
+            try await responseStream.send(MyProto_SessionStatus.with { $0.gameStarted = false })
+        }
+        try await responseStream.send(MyProto_SessionStatus.with { $0.gameStarted = true })
+    }
+
+
     func updateMessages(request: MyProto_User, responseStream: GRPC.GRPCAsyncResponseStreamWriter<MyProto_Message>, context: GRPC.GRPCAsyncServerCallContext) async throws {
         let session = playerInSession(request)
         var index = 0
-        while session.users.contains(request) {
-            usleep(500)
+        while session.users.contains(where: {$0.id == request.id}) {
+            usleep(1000)
             while index < session.messagesHistory.count {
                 try await responseStream.send(session.messagesHistory[index])
                 index += 1
@@ -65,18 +112,52 @@ final class MessageProvider: MyProto_MessageServiceAsyncProvider {
         }
     }
 
-    func sendPlay(request: MyProto_Play, context: GRPC.GRPCAsyncServerCallContext) async throws -> MyProto_Empty {
-        MyProto_Empty()
-    }
-
     func updateBoard(request: MyProto_User, responseStream: GRPC.GRPCAsyncResponseStreamWriter<MyProto_Board>, context: GRPC.GRPCAsyncServerCallContext) async throws {
         let session = playerInSession(request)
-        let board = session.gameBoard.board
-
+        while session.isInGame && session.users.contains(where: {$0.id == request.id}) {
+            usleep(1000)
+            let board = session.gameBoard.board.map { obj in MyProto_BoardColumn.with { $0.columns = obj.convertToProto()} }
+            let message = MyProto_Board.with { $0.rows = board }
+            try await responseStream.send(message)
+        }
     }
 
-    func updateTurn(request: MyProto_User, responseStream: GRPC.GRPCAsyncResponseStreamWriter<MyProto_Turn>, context: GRPC.GRPCAsyncServerCallContext) async throws {
-        print()
+    func updateTurn(request: MyProto_User, responseStream: GRPC.GRPCAsyncResponseStreamWriter<MyProto_User>, context: GRPC.GRPCAsyncServerCallContext) async throws {
+        let session = playerInSession(request)
+        while session.isInGame && session.users.contains(where: {$0.id == request.id}) {
+            usleep(1000)
+            let player = session.users.first { $0.id == request.id }
+
+            if player != nil { try await responseStream.send(player!) }
+        }
+    }
+
+    func updateGameStatus(request: MyProto_User, responseStream: GRPC.GRPCAsyncResponseStreamWriter<MyProto_GameStatus>, context: GRPC.GRPCAsyncServerCallContext) async throws {
+        let session = playerInSession(request)
+        while session.isInGame && session.users.contains(where: {$0.id == request.id}) {
+            usleep(1000)
+            let gameStatus = MyProto_GameStatus.with {
+                $0.gameEnd = false
+                $0.win = false
+            }
+            try await responseStream.send(gameStatus)
+        }
+        let player = session.users.first { user in
+            user.id == request.id
+        }
+        if player == nil {
+            let status = MyProto_GameStatus.with {
+                $0.gameEnd = true
+                $0.win = false
+            }
+            try await responseStream.send(status)
+        } else {
+            let status = MyProto_GameStatus.with {
+                $0.gameEnd = true
+                $0.win = true
+            }
+            try await responseStream.send(status)
+        }
     }
 }
 

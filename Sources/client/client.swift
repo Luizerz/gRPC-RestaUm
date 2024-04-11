@@ -30,13 +30,40 @@ struct RouteGuide: AsyncParsableCommand {
         )
 
         let messageService = MyProto_MessageServiceAsyncClient(channel: channel)
+        let myActor = MyCustomActor()
         Task {
-            for try await message in messageService.updateMessages(MyProto_User()) {
+            try await testPourpose(messageService, actor: myActor)
+        }
+        Task {
+            while await !myActor.myTurn {
+                sleep(2)
+                print("Ator falso")
+            }
+            print("Ator verdadeiro")
+        }
+        while true { usleep(1000) }
+    }
+
+    func testPourpose(_ service: MyProto_MessageServiceAsyncClient, actor: MyCustomActor) async throws {
+        let user = try await service.connect(MyProto_Empty())
+        Task {
+            for try await response in service.updateSessionStatus(user) {
+                print("updateSessionStatus: ", response.gameStarted)
+                await actor.setMyTurn(response.gameStarted)
+            }
+            for try await response in service.updateTurn(user) {
 
             }
         }
 
-        while true {sleep(1)}
+    }
+}
 
+actor MyCustomActor {
+    var myTurn: Bool = false
+
+
+    func setMyTurn(_ entry: Bool) {
+        myTurn = entry
     }
 }
