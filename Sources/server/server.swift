@@ -17,7 +17,7 @@ struct HelloWorld: AsyncParsableCommand {
     var port = 1234
 
     func run() async throws {
-        let group = MultiThreadedEventLoopGroup(numberOfThreads: 2)
+        let group = MultiThreadedEventLoopGroup(numberOfThreads: 12)
         defer {
             try! group.syncShutdownGracefully()
         }

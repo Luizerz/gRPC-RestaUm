@@ -30,8 +30,6 @@ final class MessageProvider: MyProto_MessageServiceAsyncProvider {
     }
 
     private func turnHandler(_ session: GameSession) {
-//        session.users.shuffle()
-
         session.users[0].isYourTurn.toggle()
     }
 
