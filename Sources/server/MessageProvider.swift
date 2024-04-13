@@ -140,6 +140,7 @@ final class MessageProvider: MyProto_MessageServiceAsyncProvider {
             }
             try await responseStream.send(gameStatus)
         }
+        
         let player = session.users.first { user in
             user.id == request.id
         }

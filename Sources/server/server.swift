@@ -48,7 +48,11 @@ class GameSession {
 
 class GameBoard {
 
-    private var matrix = [[BoardValue]]()
+    private var matrix = [[BoardValue]]() {
+        didSet {
+            print(matrix)
+        }
+    }
     var board: [[BoardValue]] {
         return matrix
     }
